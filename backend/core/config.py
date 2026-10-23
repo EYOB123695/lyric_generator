@@ -38,6 +38,11 @@ class Settings:
     app_env: str = os.getenv("APP_ENV", "development")
     api_prefix: str = "/api"
 
+    database_url: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql://neondb_owner:npg_H0qo1iIzMSTw@ep-crimson-snow-b4jdkq8x-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require",
+    )
+
     project_root: Path = Path(__file__).resolve().parents[2]
     backend_dir: Path = Path(__file__).resolve().parents[1]
     temp_root: Path = Path(os.getenv("LYRICVID_TEMP_ROOT", "/tmp/lyricvid"))
