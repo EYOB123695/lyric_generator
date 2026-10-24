@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.core.auth import require_admin
@@ -9,6 +9,7 @@ from backend.core.database import get_db
 from backend.core.security import generate_invite_token, hash_invite_token
 from backend.models.schemas import InviteCreateRequest, InviteResponse
 from backend.models.user import Invitation, User
+from backend.services.email import send_invite_email
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.post("/invites", response_model=InviteResponse)
 def create_invite(
     payload: InviteCreateRequest,
+    background_tasks: BackgroundTasks,
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -32,10 +34,12 @@ def create_invite(
     db.add(invite)
     db.commit()
 
-    invite_url = f"/accept-invite?token={raw_token}"
+    # Dispatch email via background task
+    background_tasks.add_task(send_invite_email, invite.email, raw_token)
+
     return InviteResponse(
         email=invite.email,
-        invite_url=invite_url,
+        message="Invitation sent successfully via email.",
         expires_at=expires_at.isoformat(),
     )
 

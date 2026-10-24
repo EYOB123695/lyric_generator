@@ -48,6 +48,15 @@ class Settings:
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
     invite_token_expire_days: int = int(os.getenv("INVITE_TOKEN_EXPIRE_DAYS", "7"))
 
+    smtp_host: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    frontend_base_url: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
+    email_from: str = os.getenv("EMAIL_FROM", "LyricVid Beta <eyobimpactinglife@gmail.com>")
+
+
     project_root: Path = Path(__file__).resolve().parents[2]
     backend_dir: Path = Path(__file__).resolve().parents[1]
     temp_root: Path = Path(os.getenv("LYRICVID_TEMP_ROOT", "/tmp/lyricvid"))

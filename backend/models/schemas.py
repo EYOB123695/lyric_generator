@@ -126,6 +126,7 @@ class JobManifest(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     job_token: str
+    user_id: str | None = None
     original_filename: str
     safe_filename: str
     audio_path: str
@@ -139,6 +140,7 @@ class JobManifest(BaseModel):
     debug_log: str | None = None
     created_at: float
     updated_at: float
+
 
 
 class SpeakerStyle(BaseModel):
@@ -342,7 +344,7 @@ class InviteCreateRequest(BaseModel):
 
 class InviteResponse(BaseModel):
     email: str
-    invite_url: str
+    message: str = "Invitation sent successfully via email."
     expires_at: str
 
 

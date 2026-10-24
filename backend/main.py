@@ -1,4 +1,4 @@
-"""FastAPI application entry point."""
+"""FastAPI application entry point. Loaded with SMTP and Resend email dispatch."""
 
 from __future__ import annotations
 
