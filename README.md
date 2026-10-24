@@ -79,6 +79,20 @@ Once logged in as an admin:
 - Click the **`LV LyricVid`** logo in the top-left of the wizard header to open the **Workspace Menu**.
 - Use the **"Invite Beta Tester"** section to invite new users and grant starting video generation credits.
 
+### 3. Video Credits & Quota System
+
+To prevent runaway GPU/CPU and LLM costs during beta testing, the platform enforces video generation quotas stored in the `user_quotas` table:
+
+- **Credit Allocation**:
+  - **Beta Testers**: Receive **3 credits** by default upon accepting their invitation (allows generating 3 complete videos). Admins can customize this amount (from 1 to 100 credits) when issuing the invite.
+  - **Admins**: Granted **100 credits** by default when created via `scripts/create_admin.py` (customizable using the `--credits` flag).
+- **Enforcement (`backend/core/permissions.py`)**:
+  - Each video export (`POST /api/export`) checks that `credits_remaining > 0` before initiating rendering.
+  - Each successful video export consumes 1 credit.
+  - When balance reaches 0, further export requests return `HTTP 402 Payment Required` until an admin increases the allowance.
+- **UI Integration**:
+  - Real-time remaining balance is prominently displayed in the top header (`⚡ {credits} credits`) and inside the workspace sidebar.
+
 ---
 
 ## Email Setup for Beta Invites (SMTP)
