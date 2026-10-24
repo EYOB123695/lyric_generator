@@ -37,11 +37,16 @@ class Settings:
     app_name: str = "LyricVid"
     app_env: str = os.getenv("APP_ENV", "development")
     api_prefix: str = "/api"
-
+    
     database_url: str = os.getenv(
         "DATABASE_URL",
         "postgresql://postgres:postgres@localhost:5432/lyricvid_db",
     )
+
+    secret_key: str = os.getenv("SECRET_KEY", "insecure-dev-secret-key-change-in-production")
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
+    invite_token_expire_days: int = int(os.getenv("INVITE_TOKEN_EXPIRE_DAYS", "7"))
 
     project_root: Path = Path(__file__).resolve().parents[2]
     backend_dir: Path = Path(__file__).resolve().parents[1]
@@ -96,3 +101,4 @@ RESOLUTIONS: dict[str, tuple[int, int]] = {
 FPS_VALUES: set[int] = {30, 60}
 
 settings = Settings()
+

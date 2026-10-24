@@ -316,3 +316,41 @@ def _coerce_legacy_lyrics(payload: Any) -> dict[str, Any]:
 def parse_lyrics_payload(payload: Any) -> LyricsFile:
 
     return LyricsFile.model_validate(_coerce_legacy_lyrics(payload))
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserProfileResponse(BaseModel):
+    id: str
+    email: str
+    role: str
+    status: str
+    credits_remaining: int
+
+class InviteCreateRequest(BaseModel):
+    email: str
+    credit_allowance: int = 3
+
+
+class InviteResponse(BaseModel):
+    email: str
+    invite_url: str
+    expires_at: str
+
+
+class InviteVerifyResponse(BaseModel):
+    valid: bool
+    email: str
+
+
+class AcceptInviteRequest(BaseModel):
+    token: str
+    password: str = Field(..., min_length=8)
