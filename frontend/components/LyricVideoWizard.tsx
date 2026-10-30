@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { RotateCcw } from "lucide-react";
+import { FolderOpen, RotateCcw } from "lucide-react";
 import { UploadStep } from "@/components/steps/UploadStep";
 import { LyricsStep } from "@/components/steps/LyricsStep";
 import { BackgroundStep } from "@/components/steps/BackgroundStep";
@@ -28,15 +28,16 @@ export function LyricVideoWizard() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
-    } else {
-      getProfileApi()
-        .then(setUser)
-        .catch(() => {
-          logout();
-          router.push("/login");
-        });
+      return;
     }
-  }, [isAuthenticated, router, logout, setUser]);
+
+    getProfileApi()
+      .then((profile) => setUser(profile))
+      .catch(() => {
+        logout();
+        router.push("/login");
+      });
+  }, [isAuthenticated, logout, router, setUser]);
 
   const canContinue =
     (step === 0 && Boolean(upload.jobToken)) ||
@@ -87,12 +88,20 @@ export function LyricVideoWizard() {
               </div>
             ))}
           </nav>
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end gap-2.5">
             {user && (
               <span className="inline-flex items-center rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold text-primary border border-primary/30">
                 ⚡ {user.credits_remaining} credits
               </span>
             )}
+            <Button
+              variant="secondary"
+              onClick={() => router.push("/projects")}
+              className="gap-1.5"
+            >
+              <FolderOpen className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">My Projects</span>
+            </Button>
             <Button variant="ghost" onClick={reset}>
               <RotateCcw className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Start Over</span>
@@ -112,23 +121,26 @@ export function LyricVideoWizard() {
       </header>
 
       <main className="mx-auto flex min-h-[calc(100vh-65px)] max-w-7xl flex-col px-4 py-5 md:px-6">
-        {error ? <div className="mb-4"><StatusBanner tone="error">{error}</StatusBanner></div> : null}
+        {error ? (
+          <div className="mb-4">
+            <StatusBanner tone="error">{error}</StatusBanner>
+          </div>
+        ) : null}
         <AnimatePresence mode="wait">
-          <motion.section
+          <motion.div
             key={step}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.18 }}
-            className="flex flex-1 flex-col"
+            transition={{ duration: 0.2 }}
           >
-            {step === 0 ? <UploadStep onNext={next} /> : null}
-            {step === 1 ? <LyricsStep onNext={next} onBack={back} /> : null}
-            {step === 2 ? <BackgroundStep onNext={next} onBack={back} /> : null}
-            {step === 3 ? <ApiKeyStep onNext={next} onBack={back} /> : null}
-            {step === 4 ? <ArtDirectStep onNext={next} onBack={back} /> : null}
-            {step === 5 ? <PreviewStep onBack={back} /> : null}
-          </motion.section>
+            {step === 0 && <UploadStep onNext={next} />}
+            {step === 1 && <LyricsStep onNext={next} onBack={back} />}
+            {step === 2 && <BackgroundStep onNext={next} onBack={back} />}
+            {step === 3 && <ApiKeyStep onNext={next} onBack={back} />}
+            {step === 4 && <ArtDirectStep onNext={next} onBack={back} />}
+            {step === 5 && <PreviewStep onBack={back} />}
+          </motion.div>
         </AnimatePresence>
       </main>
 
@@ -136,4 +148,3 @@ export function LyricVideoWizard() {
     </div>
   );
 }
-

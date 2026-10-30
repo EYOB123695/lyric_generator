@@ -67,6 +67,19 @@ def _public_error(message: str) -> str:
     return message
 
 
+def _refund_job_quota(job_token: str) -> None:
+    try:
+        manifest = storage.read_manifest(job_token)
+        if manifest.user_id:
+            from backend.core.database import SessionLocal
+            from backend.core.permissions import refund_quota
+            with SessionLocal() as db:
+                refund_quota(manifest.user_id, db, cost=1)
+                print(f"[job_runner] Refunded 1 credit to user {manifest.user_id} for failed job {job_token}")
+    except Exception as refund_err:
+        print(f"[job_runner] Could not refund quota for job {job_token}: {refund_err}")
+
+
 def run_transcription_job(job_token: str) -> None:
     try:
         manifest = storage.update(
@@ -112,6 +125,7 @@ def run_transcription_job(job_token: str) -> None:
             debug_log="",
         )
     except Exception as exc:
+        _refund_job_quota(job_token)
         storage.update(
             job_token,
             status=JobState.failed,
@@ -417,6 +431,7 @@ def run_export_job(job_token: str) -> None:
             debug_log="",
         )
     except RenderError as exc:
+        _refund_job_quota(job_token)
         storage.update(
             job_token,
             status=JobState.failed,
@@ -426,6 +441,7 @@ def run_export_job(job_token: str) -> None:
             debug_log=exc.stderr or str(exc),
         )
     except (ValidationError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        _refund_job_quota(job_token)
         storage.update(
             job_token,
             status=JobState.failed,
@@ -435,6 +451,7 @@ def run_export_job(job_token: str) -> None:
             debug_log=str(exc),
         )
     except Exception as exc:
+        _refund_job_quota(job_token)
         storage.update(
             job_token,
             status=JobState.failed,

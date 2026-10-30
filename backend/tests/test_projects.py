@@ -14,6 +14,7 @@ def compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
 from backend.core.database import Base
+from backend.core.permissions import check_and_consume_quota, refund_quota
 from backend.models.user import User
 from backend.services.project_service import (
     create_project,
@@ -105,3 +106,16 @@ def test_create_video_job_and_update_status(db_session, test_user):
     assert updated is not None
     assert updated.status == "processing"
     assert updated.started_at is not None
+
+
+def test_quota_consumption_and_refund(db_session, test_user):
+    quota = check_and_consume_quota(test_user, db_session, cost=1)
+    assert quota.credits_used == 1
+
+    refunded = refund_quota(test_user, db_session, cost=1)
+    assert refunded is not None
+    assert refunded.credits_used == 0
+
+    # Ensure quota doesn't drop below 0
+    refunded_again = refund_quota(test_user, db_session, cost=1)
+    assert refunded_again.credits_used == 0

@@ -6,6 +6,7 @@ import type {
   JobStatus,
   LyricsFile,
   Preset,
+  ProjectItem,
   Storyboard,
   TokenResponse,
   UploadResponse,
@@ -283,3 +284,29 @@ export async function createInviteApi(
   return readJson<{ email: string; message: string; expires_at: string }>(response);
 }
 
+// --- Project Persistence API Functions ---
+
+export async function fetchProjectsApi(): Promise<ProjectItem[]> {
+  const response = await fetch(`${API_BASE}/api/projects`, {
+    headers: { ...getAuthHeaders() },
+    cache: "no-store",
+  });
+  const data = await readJson<{ projects: ProjectItem[] }>(response);
+  return data.projects;
+}
+
+export async function fetchProjectDetailApi(id: string): Promise<ProjectItem> {
+  const response = await fetch(`${API_BASE}/api/projects/${id}`, {
+    headers: { ...getAuthHeaders() },
+    cache: "no-store",
+  });
+  return readJson<ProjectItem>(response);
+}
+
+export async function deleteProjectApi(id: string): Promise<{ status: string }> {
+  const response = await fetch(`${API_BASE}/api/projects/${id}`, {
+    method: "DELETE",
+    headers: { ...getAuthHeaders() },
+  });
+  return readJson<{ status: string }>(response);
+}

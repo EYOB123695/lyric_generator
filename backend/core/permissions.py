@@ -1,4 +1,7 @@
 """Ownership verification and quota deduction dependencies."""
+from __future__ import annotations
+
+import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -34,4 +37,23 @@ def check_and_consume_quota(current_user: User, db: Session, cost: int = 1) -> U
 
     quota.credits_used += cost
     db.commit()
+    return quota
+
+
+def refund_quota(user_id: str | uuid.UUID | User, db: Session, cost: int = 1) -> UserQuota | None:
+    """Refunds credits to the user if a processing job fails due to an internal error."""
+    uid = user_id.id if isinstance(user_id, User) else user_id
+    if isinstance(uid, str):
+        try:
+            uid = uuid.UUID(uid)
+        except ValueError:
+            return None
+
+    quota = db.query(UserQuota).filter(UserQuota.user_id == uid).first()
+    if not quota:
+        return None
+
+    quota.credits_used = max(0, quota.credits_used - cost)
+    db.commit()
+    db.refresh(quota)
     return quota

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, Send, Shield, UserPlus, X } from "lucide-react";
+import { FolderOpen, LogOut, Send, Shield, UserPlus, X } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createInviteApi } from "@/lib/api";
 
@@ -104,6 +104,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </div>
                 </div>
               )}
+
+              {/* My Projects Navigation Button */}
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push("/projects");
+                }}
+                className="w-full flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-3.5 text-xs font-semibold text-white hover:bg-violet-500/15 hover:border-violet-500/30 transition group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FolderOpen className="h-4 w-4 text-violet-400" />
+                  <span>My Projects & Saved Drafts</span>
+                </div>
+                <span className="text-zinc-500 group-hover:text-white transition">→</span>
+              </button>
 
               {/* Admin Invite Section */}
               {user?.role === "admin" && (

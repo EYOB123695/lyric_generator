@@ -57,6 +57,7 @@ export type UploadResponse = {
   job_token: string;
   filename: string;
   duration_seconds: number;
+  project_id?: string | null;
 };
 
 export type BackgroundSelection =
@@ -119,4 +120,25 @@ export type InviteVerifyResponse = {
   email: string;
 };
 
+export type ProjectScene = {
+  scene_order: number;
+  start_time_ms: number;
+  end_time_ms: number;
+  prompt: string;
+  transition_type: string;
+};
 
+export type ProjectItem = {
+  id: string;
+  title: string;
+  status: string;
+  styling_config?: Record<string, any>;
+  lyrics?: {
+    raw_text: string;
+    timing_data: LyricLine[];
+    source: string;
+  } | null;
+  scenes?: ProjectScene[];
+  created_at: string;
+  updated_at: string;
+};
