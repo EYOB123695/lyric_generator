@@ -138,6 +138,41 @@ FRONTEND_BASE_URL=https://your-frontend-domain.com
 
 ---
 
+## Cloud Object Storage Setup (Cloudflare R2 / S3)
+
+To prevent data loss on server restarts and allow horizontal scaling across multiple container replicas, LyricVid supports **Cloudflare R2** (or any S3-compatible storage) for storing user audio uploads and rendered MP4 exports.
+
+Cloudflare R2 is recommended because it provides **10 GB storage and 10 million operations free per month with $0 bandwidth/egress fees**.
+
+### 1. Create a Bucket in Cloudflare
+1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com).
+2. Go to **R2 Object Storage** in the left menu.
+3. Click **Create bucket**, name it `lyricvid-media` (or your preferred name), and click **Create bucket**.
+
+### 2. Generate an R2 API Token
+1. Under **R2 Object Storage**, click **Manage R2 API Tokens** on the right side.
+2. Click **Create API Token**.
+3. Set permissions to **Object Read & Write**.
+4. Choose your bucket (`lyricvid-media`) under **Apply to specific buckets only** (or select all buckets).
+5. Click **Create API Token**.
+6. Copy the **Access Key ID**, **Secret Access Key**, and **Endpoint URL** (formatted as `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
+
+### 3. Add to Your `.env` File
+
+```env
+USE_S3_STORAGE=true
+R2_BUCKET=lyricvid-media
+R2_ENDPOINT_URL=https://<YOUR_CLOUDFLARE_ACCOUNT_ID>.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_REGION=auto
+S3_PRESIGNED_EXPIRY_SECONDS=3600
+```
+
+> **Local Fallback:** If `USE_S3_STORAGE=false` or credentials are left empty, the application automatically uses local disk storage (`/tmp/lyricvid`) for local offline development.
+
+---
+
 ## API Summary
 
 - `POST /api/auth/login` - authenticate user and return signed JWT token.
@@ -145,17 +180,21 @@ FRONTEND_BASE_URL=https://your-frontend-domain.com
 - `GET /api/auth/invites/verify?token=...` - verify validity of an invite token.
 - `POST /api/auth/invites/accept` - set account password and activate invite.
 - `POST /api/admin/invites` - (Admin only) generate invitation and dispatch SMTP email.
-- `POST /api/upload` - upload MP3/WAV, returns a `job_token`.
+- `GET /api/projects` - list all saved projects and drafts for authenticated user.
+- `GET /api/projects/{id}` - get project details with lyrics and storyboard scenes.
+- `PATCH /api/projects/{id}` - update project title, styling, and lyrics.
+- `DELETE /api/projects/{id}` - soft delete project.
+- `POST /api/upload` - upload MP3/WAV, returns a `job_token` and `project_id`.
 - `POST /api/transcribe` - queue Whisper transcription for an uploaded job.
 - `GET /api/status/{job_token}` - poll transcription/render progress.
 - `GET /api/lyrics/{job_token}` - fetch generated lyrics JSON.
 - `POST /api/export` - queue MP4 rendering with final lyrics and background.
-- `GET /api/download/{job_token}` - stream the rendered MP4 and delete the job.
+- `GET /api/download/{job_token}` - stream the rendered MP4 or redirect to presigned R2 URL.
 - `GET /api/presets` - list built-in background presets.
 
 ## Data Retention
 
-User accounts, credit quotas, and invite tokens are securely persisted in PostgreSQL. Media files and render outputs live temporarily under `LYRICVID_TEMP_ROOT` and are automatically deleted after download or TTL expiration.
+User accounts, credit quotas, projects, lyrics, and storyboard scenes are securely persisted in PostgreSQL. Media files and render outputs are stored in Cloudflare R2 / S3 when configured, or temporarily under `LYRICVID_TEMP_ROOT` in local development mode.
 
 ## Verification
 
