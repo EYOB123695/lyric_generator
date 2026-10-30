@@ -1,16 +1,17 @@
-"""Database service layer for Project, LyricsTrack, StoryboardScene, and VideoJob."""
+"""Database service layer for Project, LyricsTrack, StoryboardScene, MediaAsset, and VideoJob."""
 
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from backend.core.errors import NotFoundError, ForbiddenError
 from backend.models.project import Project, LyricsTrack, StoryboardScene
-from backend.models.job import VideoJob
+from backend.models.job import VideoJob, ProjectExport
+from backend.models.media import MediaAsset
 from backend.models.user import User
 
 
@@ -186,3 +187,72 @@ def update_video_job_status(
     db.refresh(job)
     return job
 
+
+def create_media_asset(
+    db: Session,
+    user_id: str | uuid.UUID,
+    project_id: str | uuid.UUID | None,
+    asset_type: str,
+    s3_bucket: str,
+    s3_key: str,
+    file_name: str,
+    mime_type: str = "application/octet-stream",
+    file_size_bytes: int = 0,
+    is_temporary: bool = False,
+) -> MediaAsset:
+    if isinstance(user_id, str):
+        user_id = uuid.UUID(user_id)
+    if isinstance(project_id, str):
+        project_id = uuid.UUID(project_id)
+
+    asset = MediaAsset(
+        user_id=user_id,
+        project_id=project_id,
+        asset_type=asset_type,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+        file_name=file_name,
+        mime_type=mime_type,
+        file_size_bytes=file_size_bytes,
+        is_temporary=is_temporary,
+    )
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+    return asset
+
+
+def create_project_export(
+    db: Session,
+    project_id: str | uuid.UUID,
+    user_id: str | uuid.UUID,
+    media_asset_id: str | uuid.UUID,
+    job_id: str | uuid.UUID | None = None,
+    resolution: str = "1080p",
+    format: str = "mp4",
+    retention_days: int = 30,
+) -> ProjectExport:
+    if isinstance(project_id, str):
+        project_id = uuid.UUID(project_id)
+    if isinstance(user_id, str):
+        user_id = uuid.UUID(user_id)
+    if isinstance(media_asset_id, str):
+        media_asset_id = uuid.UUID(media_asset_id)
+    if isinstance(job_id, str):
+        job_id = uuid.UUID(job_id)
+
+    retention_expires_at = utcnow() + timedelta(days=retention_days)
+
+    export_rec = ProjectExport(
+        project_id=project_id,
+        user_id=user_id,
+        job_id=job_id,
+        media_asset_id=media_asset_id,
+        resolution=resolution,
+        format=format,
+        retention_expires_at=retention_expires_at,
+    )
+    db.add(export_rec)
+    db.commit()
+    db.refresh(export_rec)
+    return export_rec

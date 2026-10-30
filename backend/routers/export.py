@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
@@ -22,6 +22,7 @@ from backend.services.job_runner import run_export_job
 from backend.services.media import sanitize_filename, save_validated_upload
 from backend.services.presets import preset_service
 from backend.services.project_service import create_video_job
+from backend.services.s3_service import s3_storage
 from backend.services.storage import storage
 
 router = APIRouter(tags=["export"])
@@ -110,15 +111,30 @@ async def export_video(
 
 
 @router.get("/download/{job_token}")
-async def download(job_token: str) -> FileResponse:
+async def download(job_token: str):
     try:
         manifest = storage.read_manifest(job_token)
         if manifest.status != JobState.complete or not manifest.result_path:
             raise HTTPException(status_code=409, detail="The video is not ready yet.")
+
+        filename = Path(manifest.result_path).name
+
+        # If Cloudflare R2 / S3 storage is enabled, redirect to presigned download URL
+        if s3_storage.is_configured() and manifest.user_id and manifest.project_id:
+            export_key = f"users/{manifest.user_id}/projects/{manifest.project_id}/exports/{filename}"
+            presigned_url = s3_storage.generate_presigned_download_url(
+                export_key,
+                expires_in=settings.download_ttl_seconds,
+                download_filename=filename,
+            )
+            if presigned_url:
+                return RedirectResponse(url=presigned_url, status_code=307)
+
+        # Fallback to local file delivery
         result_path = Path(manifest.result_path)
         if not result_path.exists():
             raise HTTPException(status_code=404, detail="The rendered file has expired.")
-        filename = result_path.name
+
         return FileResponse(
             result_path,
             media_type="video/mp4",

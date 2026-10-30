@@ -368,6 +368,45 @@ def run_export_job(job_token: str) -> None:
                 fps=export_settings.fps,
                 on_progress=on_render_progress,
             )
+
+        # Upload final MP4 to S3 / Cloudflare R2 and persist export record
+        if manifest.project_id:
+            try:
+                from backend.core.database import SessionLocal
+                from backend.services.project_service import create_media_asset, create_project_export
+                from backend.services.s3_service import s3_storage
+
+                if s3_storage.is_configured() and manifest.user_id:
+                    export_key = f"users/{manifest.user_id}/projects/{manifest.project_id}/exports/{output_path.name}"
+                    uploaded = s3_storage.upload_file(
+                        output_path,
+                        export_key,
+                        content_type="video/mp4",
+                    )
+                    if uploaded:
+                        with SessionLocal() as db:
+                            asset = create_media_asset(
+                                db,
+                                user_id=manifest.user_id,
+                                project_id=manifest.project_id,
+                                asset_type="final_render",
+                                s3_bucket=s3_storage.bucket,
+                                s3_key=export_key,
+                                file_name=output_path.name,
+                                mime_type="video/mp4",
+                                file_size_bytes=output_path.stat().st_size,
+                            )
+                            create_project_export(
+                                db,
+                                project_id=manifest.project_id,
+                                user_id=manifest.user_id,
+                                media_asset_id=asset.id,
+                                resolution=export_settings.resolution,
+                                format="mp4",
+                            )
+            except Exception as s3_err:
+                print(f"[job_runner] S3 export sync failed: {s3_err}")
+
         storage.update(
             job_token,
             status=JobState.complete,
