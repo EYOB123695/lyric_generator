@@ -71,6 +71,7 @@ class UploadResponse(BaseModel):
     job_token: str
     filename: str
     duration_seconds: float
+    project_id: str | None = None
 
 
 class TranscribeRequest(BaseModel):
@@ -127,6 +128,7 @@ class JobManifest(BaseModel):
 
     job_token: str
     user_id: str | None = None
+    project_id: str | None = None
     original_filename: str
     safe_filename: str
     audio_path: str
@@ -356,3 +358,25 @@ class InviteVerifyResponse(BaseModel):
 class AcceptInviteRequest(BaseModel):
     token: str
     password: str = Field(..., min_length=8)
+
+
+class ProjectResponse(BaseModel):
+    id: str
+    title: str
+    status: str
+    styling_config: dict[str, Any] = {}
+    lyrics: dict[str, Any] | None = None
+    scenes: list[dict[str, Any]] = []
+    created_at: str
+    updated_at: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectListResponse(BaseModel):
+    projects: list[ProjectResponse]
+
+
+class ProjectUpdateRequest(BaseModel):
+    title: str | None = None
+    styling_config: dict[str, Any] | None = None

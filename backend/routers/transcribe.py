@@ -13,6 +13,7 @@ from backend.core.permissions import check_and_consume_quota, verify_job_owner
 from backend.models.schemas import AlignRequest, JobPhase, JobState, LyricsFile, QueueResponse, StatusResponse, TranscribeRequest
 from backend.models.user import User
 from backend.services.job_runner import run_alignment_job, run_transcription_job
+from backend.services.project_service import create_video_job
 from backend.services.storage import storage
 from backend.services.transcription_state import transcription_response_for_manifest
 
@@ -49,6 +50,9 @@ async def transcribe(
         # Deduct 1 credit for new transcription run
         check_and_consume_quota(current_user, db, cost=1)
 
+        if manifest.project_id:
+            create_video_job(db, manifest.project_id, current_user, job_type="transcription", credits_cost=1)
+
         storage.update(
             request.job_token,
             status=JobState.queued,
@@ -68,10 +72,14 @@ async def align(
     request: AlignRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> QueueResponse:
     try:
         manifest = storage.read_manifest(request.job_token)
         verify_job_owner(manifest, current_user)
+
+        if manifest.project_id:
+            create_video_job(db, manifest.project_id, current_user, job_type="alignment", credits_cost=0)
 
         storage.update(
             request.job_token,

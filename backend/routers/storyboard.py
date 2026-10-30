@@ -5,6 +5,9 @@ from __future__ import annotations
 import re
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+from backend.core.database import get_db
+from backend.services.project_service import create_video_job
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -54,6 +57,7 @@ async def art_direct(
     request: ArtDirectRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> QueueResponse:
     
     try:
@@ -75,6 +79,9 @@ async def art_direct(
             )
 
         
+        if manifest.project_id:
+            create_video_job(db, manifest.project_id, current_user, job_type="art_direction", credits_cost=0)
+
         storage.write_json(
             request.job_token,
             "art_direction_request.json",

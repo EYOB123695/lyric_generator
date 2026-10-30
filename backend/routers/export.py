@@ -1,4 +1,4 @@
-"""MP4 export and download endpoints."""
+"""Export, download, and render status endpoints."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from backend.models.user import User
 from backend.services.job_runner import run_export_job
 from backend.services.media import sanitize_filename, save_validated_upload
 from backend.services.presets import preset_service
+from backend.services.project_service import create_video_job
 from backend.services.storage import storage
 
 router = APIRouter(tags=["export"])
@@ -34,7 +35,7 @@ def _queue_export(job_token: str, background_tasks: BackgroundTasks) -> None:
             export_job.delay(job_token)
             return
         except Exception as exc:
-            raise WorkerUnavailableError("Could not queue export. Is Redis running?") from exc
+            raise WorkerUnavailableError("Could not queue the export job. Is Redis running?") from exc
     background_tasks.add_task(run_export_job, job_token)
 
 
@@ -54,6 +55,10 @@ async def export_video(
         manifest = storage.read_manifest(job_token)
         verify_job_owner(manifest, current_user)
         check_and_consume_quota(current_user, db, cost=1)
+
+        if manifest.project_id:
+            create_video_job(db, manifest.project_id, current_user, job_type="final_export", credits_cost=1)
+
         try:
             lyrics_payload = json.loads(lyrics)
             lyrics_model = parse_lyrics_payload(lyrics_payload)
