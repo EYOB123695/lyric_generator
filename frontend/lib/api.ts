@@ -1,5 +1,7 @@
 import axios from "axios";
 import type {
+  AdminInviteItem,
+  AdminUserItem,
   AiBackground,
   ExportResolution,
   InviteVerifyResponse,
@@ -310,3 +312,59 @@ export async function deleteProjectApi(id: string): Promise<{ status: string }> 
   });
   return readJson<{ status: string }>(response);
 }
+
+// --- Admin Management API Functions ---
+
+export async function fetchAdminUsersApi(): Promise<AdminUserItem[]> {
+  const response = await fetch(`${API_BASE}/api/admin/users`, {
+    headers: { ...getAuthHeaders() },
+    cache: "no-store",
+  });
+  const data = await readJson<{ users: AdminUserItem[] }>(response);
+  return data.users;
+}
+
+export async function fetchAdminInvitesApi(): Promise<AdminInviteItem[]> {
+  const response = await fetch(`${API_BASE}/api/admin/invites`, {
+    headers: { ...getAuthHeaders() },
+    cache: "no-store",
+  });
+  const data = await readJson<{ invites: AdminInviteItem[] }>(response);
+  return data.invites;
+}
+
+export async function updateUserCreditsApi(
+  userId: string,
+  creditAllowance?: number,
+  addCredits?: number
+): Promise<{ user_id: string; credit_allowance: number; credits_used: number; credits_remaining: number }> {
+  const response = await fetch(`${API_BASE}/api/admin/users/${userId}/credits`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      credit_allowance: creditAllowance,
+      add_credits: addCredits,
+    }),
+  });
+  return readJson(response);
+}
+
+export async function revokeUserApi(userId: string): Promise<{ status: string; user_id: string }> {
+  const response = await fetch(`${API_BASE}/api/admin/users/${userId}/revoke`, {
+    method: "POST",
+    headers: { ...getAuthHeaders() },
+  });
+  return readJson(response);
+}
+
+export async function activateUserApi(userId: string): Promise<{ status: string; user_id: string }> {
+  const response = await fetch(`${API_BASE}/api/admin/users/${userId}/activate`, {
+    method: "POST",
+    headers: { ...getAuthHeaders() },
+  });
+  return readJson(response);
+}
+

@@ -367,6 +367,8 @@ class ProjectResponse(BaseModel):
     styling_config: dict[str, Any] = {}
     lyrics: dict[str, Any] | None = None
     scenes: list[dict[str, Any]] = []
+    latest_export: dict[str, Any] | None = None
+    audio: dict[str, Any] | None = None
     created_at: str
     updated_at: str
 

@@ -128,6 +128,15 @@ export type ProjectScene = {
   transition_type: string;
 };
 
+export type ProjectExportInfo = {
+  id: string;
+  resolution: string;
+  format: string;
+  file_name: string;
+  download_url: string;
+  created_at: string;
+};
+
 export type ProjectItem = {
   id: string;
   title: string;
@@ -139,6 +148,36 @@ export type ProjectItem = {
     source: string;
   } | null;
   scenes?: ProjectScene[];
+  latest_export?: ProjectExportInfo | null;
+  audio?: {
+    id: string;
+    file_name: string;
+    mime_type: string;
+    file_size_bytes: number;
+    url: string;
+  } | null;
   created_at: string;
   updated_at: string;
 };
+
+export type AdminUserItem = {
+  id: string;
+  email: string;
+  role: "admin" | "user";
+  status: "active" | "invited" | "revoked";
+  credit_allowance: number;
+  credits_used: number;
+  credits_remaining: number;
+  projects_count: number;
+  created_at: string;
+};
+
+export type AdminInviteItem = {
+  id: string;
+  email: string;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+  status: "accepted" | "pending" | "expired";
+};
+

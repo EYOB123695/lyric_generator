@@ -253,6 +253,13 @@ def create_project_export(
         retention_expires_at=retention_expires_at,
     )
     db.add(export_rec)
+
+    # Mark parent project as completed
+    proj = db.query(Project).filter(Project.id == project_id).first()
+    if proj:
+        proj.status = "completed"
+        proj.updated_at = utcnow()
+
     db.commit()
     db.refresh(export_rec)
     return export_rec

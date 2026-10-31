@@ -120,6 +120,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span className="text-zinc-500 group-hover:text-white transition">→</span>
               </button>
 
+              {/* Admin Dashboard Navigation Button */}
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    router.push("/admin/users");
+                  }}
+                  className="w-full flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Shield className="h-4 w-4 text-amber-400" />
+                    <span>Admin User & Quota Panel</span>
+                  </div>
+                  <span className="text-amber-500 group-hover:text-amber-300 transition">→</span>
+                </button>
+              )}
+
               {/* Admin Invite Section */}
               {user?.role === "admin" && (
                 <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">

@@ -119,18 +119,35 @@ export const useAppStore = create<AppState>((set, get) => ({
       };
     }
 
+    const isCompleted = project.status === "completed" || Boolean(project.latest_export);
+    const exportResultUrl = project.latest_export?.download_url || `/api/download/${project.id}`;
+
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    const audioFilename = project.audio?.file_name || `${project.title}.mp3`;
+    const audioUrl = project.audio?.url ? `${apiBase}${project.audio.url}` : `${apiBase}/api/projects/${project.id}/audio`;
+
     set({
-      step: lyricsFile ? 1 : 0,
+      step: isCompleted ? 4 : (lyricsFile ? 1 : 0),
       activeProjectId: project.id,
       upload: {
         file: null,
-        objectUrl: null,
-        filename: `${project.title}.mp3`,
+        objectUrl: audioUrl,
+        filename: audioFilename,
         duration: lyricsFile?.duration_seconds || 0,
         jobToken: project.id,
       },
       lyrics: lyricsFile,
       originalLyrics: lyricsFile ? structuredClone(lyricsFile) : null,
+      exportStatus: isCompleted
+        ? {
+            job_token: project.id,
+            status: "complete",
+            progress_pct: 100,
+            result_url: exportResultUrl,
+            error: null,
+            debug_log: null,
+          }
+        : null,
       error: "",
     });
   },

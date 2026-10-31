@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
@@ -111,7 +112,29 @@ async def export_video(
 
 
 @router.get("/download/{job_token}")
-async def download(job_token: str):
+async def download(job_token: str, db: Session = Depends(get_db)):
+    # 1. Try resolving via PostgreSQL project_exports if job_token is a project_id or export_id
+    try:
+        token_uuid = uuid.UUID(job_token)
+        from backend.models.job import ProjectExport
+
+        export_rec = (
+            db.query(ProjectExport)
+            .filter((ProjectExport.project_id == token_uuid) | (ProjectExport.id == token_uuid))
+            .order_by(ProjectExport.created_at.desc())
+            .first()
+        )
+        if export_rec and export_rec.media_asset and s3_storage.is_configured():
+            presigned_url = s3_storage.generate_presigned_download_url(
+                export_rec.media_asset.s3_key,
+                expires_in=settings.download_ttl_seconds,
+                download_filename=export_rec.media_asset.file_name,
+            )
+            if presigned_url:
+                return RedirectResponse(url=presigned_url, status_code=307)
+    except ValueError:
+        pass
+
     try:
         manifest = storage.read_manifest(job_token)
         if manifest.status != JobState.complete or not manifest.result_path:

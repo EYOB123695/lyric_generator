@@ -91,9 +91,52 @@ class JobStorage:
 
     def read_manifest(self, token: str) -> JobManifest:
         path = self.manifest_path(token)
-        if not path.exists():
-            raise NotFoundError("That job has expired or does not exist.")
-        return JobManifest.model_validate_json(path.read_text(encoding="utf-8"))
+        if path.exists():
+            return JobManifest.model_validate_json(path.read_text(encoding="utf-8"))
+
+        # Fallback 1: Search local manifests for matching project_id or job_token
+        for manifest_file in self.root.glob("*/manifest.json"):
+            try:
+                m = JobManifest.model_validate_json(manifest_file.read_text(encoding="utf-8"))
+                if m.project_id == token or m.job_token == token:
+                    return m
+            except Exception:
+                continue
+
+        # Fallback 2: Check database & S3 if token is a project UUID
+        try:
+            import uuid
+            proj_uuid = uuid.UUID(token)
+            from backend.core.database import SessionLocal
+            from backend.models.media import MediaAsset
+            from backend.services.s3_service import s3_storage
+            from backend.services.media import probe_audio_duration
+
+            db = SessionLocal()
+            try:
+                asset = (
+                    db.query(MediaAsset)
+                    .filter(MediaAsset.project_id == proj_uuid, MediaAsset.asset_type == "audio_source")
+                    .first()
+                )
+                if asset and s3_storage.is_configured():
+                    dest_audio = self.job_dir(token) / asset.file_name
+                    if s3_storage.download_file(asset.s3_key, dest_audio):
+                        duration = probe_audio_duration(dest_audio)
+                        return self.create_audio_job(
+                            token=token,
+                            original_filename=asset.file_name,
+                            audio_path=dest_audio,
+                            duration_seconds=duration,
+                            user_id=str(asset.user_id),
+                            project_id=str(proj_uuid),
+                        )
+            finally:
+                db.close()
+        except Exception:
+            pass
+
+        raise NotFoundError("That job has expired or does not exist.")
 
     def write_manifest(self, manifest: JobManifest) -> None:
         path = self.manifest_path(manifest.job_token)

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, FileAudio, FolderOpen, Music, Play, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Download, FileAudio, FolderOpen, Music, Play, Plus, Shield, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAppStore } from "@/store/useAppStore";
-import { deleteProjectApi, fetchProjectsApi } from "@/lib/api";
+import { deleteProjectApi, downloadUrl, fetchProjectsApi } from "@/lib/api";
 import type { ProjectItem } from "@/lib/types";
 
 export default function ProjectsPage() {
@@ -84,6 +84,15 @@ export default function ProjectsPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {user?.role === "admin" && (
+              <button
+                onClick={() => router.push("/admin/users")}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Admin Panel
+              </button>
+            )}
             {user && (
               <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-300">
                 ⚡ {user.credits_remaining} credits
@@ -206,13 +215,26 @@ export default function ProjectsPage() {
                       <Trash2 className="h-4 w-4" />
                     </button>
 
-                    <button
-                      onClick={() => handleResume(project)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/40 bg-violet-500/15 px-3.5 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500 hover:text-white transition"
-                    >
-                      <Play className="h-3.5 w-3.5" />
-                      Resume
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {project.status === "completed" && (
+                        <a
+                          href={downloadUrl(project.id)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500 hover:text-white transition"
+                          title="Download MP4 video"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Download
+                        </a>
+                      )}
+
+                      <button
+                        onClick={() => handleResume(project)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-violet-500/40 bg-violet-500/15 px-3.5 py-1.5 text-xs font-semibold text-violet-200 hover:bg-violet-500 hover:text-white transition"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        {project.status === "completed" ? "Open Studio" : "Resume"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
