@@ -143,3 +143,42 @@ def test_create_media_asset_and_export_record(db_session, test_user, test_projec
     assert export_rec.media_asset_id == asset.id
     assert export_rec.resolution == "1080p"
     assert export_rec.retention_expires_at is not None
+
+
+def test_seaweedfs_configuration_and_ensure_bucket(tmp_path):
+    """Tests SeaweedFS local endpoint configuration, path-style addressing, and auto-bucket creation."""
+    from botocore.exceptions import ClientError
+
+    s3 = S3StorageService()
+    s3.bucket = "seaweed-bucket"
+    s3.access_key = "any_key"
+    s3.secret_key = "any_secret"
+    s3.endpoint_url = "http://localhost:8333"
+
+    mock_client = MagicMock()
+    s3._client = mock_client
+
+    with patch.object(s3, "is_configured", return_value=True):
+        # 1. Bucket already exists
+        mock_client.head_bucket.return_value = {}
+        assert s3.ensure_bucket() is True
+        mock_client.head_bucket.assert_called_with(Bucket="seaweed-bucket")
+
+        # 2. Bucket does not exist -> auto-creates bucket
+        mock_client.head_bucket.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchBucket", "Message": "The specified bucket does not exist"}},
+            "HeadBucket",
+        )
+        assert s3.ensure_bucket() is True
+        mock_client.create_bucket.assert_called_with(Bucket="seaweed-bucket")
+
+        # 3. Upload auto-creates bucket on NoSuchBucket
+        dummy_file = tmp_path / "song.mp3"
+        dummy_file.write_bytes(b"audio data")
+        mock_client.upload_file.side_effect = [
+            ClientError({"Error": {"Code": "NoSuchBucket"}}, "UploadFile"),
+            None,  # succeeds on retry
+        ]
+        with patch.object(s3, "ensure_bucket", return_value=True):
+            uploaded = s3.upload_file(dummy_file, "audio/song.mp3")
+            assert uploaded is True

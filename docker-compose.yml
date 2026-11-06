@@ -3,6 +3,17 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
 
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    ports:
+      - "8333:8333" # S3 API endpoint
+      - "9333:9333" # SeaweedFS master server
+      - "8888:8888" # SeaweedFS filer UI
+    command: "server -s3 -dir=/data"
+    volumes:
+      - seaweed-data:/data
+
   backend:
     build:
       context: .
@@ -29,6 +40,7 @@ services:
       - whisper-cache:/home/lyricvid/.cache
     depends_on:
       - redis
+      - seaweedfs
 
   worker:
     build:
@@ -54,6 +66,7 @@ services:
       - whisper-cache:/home/lyricvid/.cache
     depends_on:
       - redis
+      - seaweedfs
 
   frontend:
     build:
@@ -72,3 +85,4 @@ services:
 volumes:
   lyricvid-temp:
   whisper-cache:
+  seaweed-data:

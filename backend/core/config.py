@@ -56,16 +56,16 @@ class Settings:
     frontend_base_url: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
     email_from: str = os.getenv("EMAIL_FROM", "LyricVid Beta <eyobimpactinglife@gmail.com>")
 
-    # Cloudflare R2 / S3 Storage Settings
-    s3_bucket: str = os.getenv("R2_BUCKET", os.getenv("S3_BUCKET", ""))
-    s3_endpoint_url: str | None = os.getenv("R2_ENDPOINT_URL", os.getenv("S3_ENDPOINT_URL", None))
-    s3_region: str = os.getenv("R2_REGION", os.getenv("S3_REGION", "auto"))
-    aws_access_key_id: str | None = os.getenv("R2_ACCESS_KEY_ID", os.getenv("AWS_ACCESS_KEY_ID", None))
-    aws_secret_access_key: str | None = os.getenv("R2_SECRET_ACCESS_KEY", os.getenv("AWS_SECRET_ACCESS_KEY", None))
+    # Cloudflare R2 / S3 / SeaweedFS Storage Settings
+    s3_bucket: str = os.getenv("SEAWEEDFS_BUCKET", os.getenv("R2_BUCKET", os.getenv("S3_BUCKET", "")))
+    s3_endpoint_url: str | None = os.getenv("SEAWEEDFS_ENDPOINT_URL", os.getenv("R2_ENDPOINT_URL", os.getenv("S3_ENDPOINT_URL", None)))
+    s3_region: str = os.getenv("SEAWEEDFS_REGION", os.getenv("R2_REGION", os.getenv("S3_REGION", "auto")))
+    aws_access_key_id: str | None = os.getenv("SEAWEEDFS_ACCESS_KEY_ID", os.getenv("R2_ACCESS_KEY_ID", os.getenv("AWS_ACCESS_KEY_ID", None)))
+    aws_secret_access_key: str | None = os.getenv("SEAWEEDFS_SECRET_ACCESS_KEY", os.getenv("R2_SECRET_ACCESS_KEY", os.getenv("AWS_SECRET_ACCESS_KEY", None)))
     s3_presigned_expiry_seconds: int = int(os.getenv("S3_PRESIGNED_EXPIRY_SECONDS", "3600"))
     use_s3_storage: bool = _bool_env(
         "USE_S3_STORAGE",
-        bool(os.getenv("R2_BUCKET") or os.getenv("S3_BUCKET")),
+        bool(os.getenv("SEAWEEDFS_BUCKET") or os.getenv("R2_BUCKET") or os.getenv("S3_BUCKET")),
     )
 
     project_root: Path = Path(__file__).resolve().parents[2]
